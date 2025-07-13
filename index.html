@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>MediQuick – Medical Team BRUXELLES</title>
+  <style>
+    :root {
+      --brand-red: #d9534f;
+      --brand-blue-light: #6faee3;
+      --bg-light: #e8f5ea;
+      --bg-card: #daf2e1;
+      --text-dark: #003322;
+    }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    body {
+      background: var(--bg-light);
+      font-family: Arial, sans-serif;
+      display:flex; flex-direction:column; align-items:center;
+      padding:20px 0;
+    }
+    .ipad-frame {
+      width:768px; height:1024px;
+      border:16px solid var(--brand-red);
+      border-top:80px solid var(--brand-blue-light);
+      border-bottom:60px solid var(--brand-blue-light);
+      border-radius:40px;
+      background:#fff;
+      display:flex; flex-direction:column;
+      box-shadow:0 0 20px rgba(0,0,0,0.2);
+    }
+    header {
+      position:relative; height:80px;
+      background:var(--brand-blue-light);
+      display:flex; align-items:center; justify-content:center;
+    }
+    .logo-container {
+      position:absolute; left:10px; top:50%; transform:translateY(-50%);
+    }
+    .logo-container img {
+      height:200px; width:auto; display:block;
+    }
+    .header-text {
+      color:#fff; font-size:24px; font-weight:600;
+    }
+    .timer-bar {
+      background:var(--brand-red);
+      display:flex; align-items:center;
+      padding:10px 20px; gap:12px;
+    }
+    .timer-bar .label { color:#fff; font-weight:700; }
+    .timer-bar button {
+      background:#fff; border:none; border-radius:4px;
+      padding:6px 12px; font-weight:600; cursor:pointer;
+    }
+    #time { color:#fff; font-weight:700; margin-left:8px; }
+    main {
+      flex:1; overflow-y:auto; padding:20px;
+    }
+    .controls {
+      display:flex; gap:12px; margin-bottom:12px;
+    }
+    .controls select,
+    .controls button {
+      padding:8px; font-size:16px; border:1px solid #ccc;
+      border-radius:4px;
+    }
+    .section { display:none; }
+    .card {
+      background:var(--bg-card);
+      border-left:6px solid var(--brand-red);
+      border-radius:6px; padding:12px; margin-bottom:14px;
+      color:var(--text-dark);
+    }
+    .tooltip {
+      position:relative; cursor:help; border-bottom:1px dotted #000;
+    }
+    .tooltip .tooltiptext {
+      visibility:hidden; opacity:0;
+      position:absolute; top:50%; left:105%;
+      transform:translateY(-50%);
+      background:var(--brand-red); color:#fff;
+      padding:8px; border-radius:6px; width:220px;
+      transition:opacity .3s; pointer-events:none;
+    }
+    .tooltip:hover .tooltiptext {
+      visibility:visible; opacity:1; pointer-events:auto;
+    }
+    .footer-bar {
+      background:var(--brand-blue-light);
+      text-align:center; padding:10px 0;
+      color:#fff; font-size:14px;
+      border-radius:0 0 40px 40px;
+      margin-top:auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="ipad-frame">
+    <header>
+      <div class="logo-container" aria-label="Logo MediQuick">
+        <img src="A_PNG_digital_logo_image_of_the_MediQuick_brand_fe.png" alt="Logo MediQuick"/>
+      </div>
+      <div class="header-text">MEDICAL TEAM BRUXELLES</div>
+    </header>
+
+    <div class="timer-bar">
+      <div class="label">Chronométrez votre action :</div>
+      <button id="btnStart">Start</button>
+      <button id="btnStop">Stop</button>
+      <button id="btnReset">Reset</button>
+      <div id="time">00:00:00</div>
+    </div>
+
+    <main>
+      <div class="controls">
+        <select id="selPatho"><option value="">-- Choisissez pathologie --</option></select>
+        <button id="btnAmp">Ampoularium</button>
+      </div>
+      <div id="cardsContainer" class="section"></div>
+    </main>
+
+    <div class="footer-bar">développé par MEDIVALENCE ©</div>
+  </div>
+
+  <script>
+    const drugs = [
+      {name:"Adenocor®", indications:["TSV paroxystique"], classe:"Antiarythmique", posologie:"6 mg IV rapide", risques:["Bradycardie","Hypotension"], voie:["IV"], fonctionnement:"Bloque canaux calciques."},
+      {name:"Adrénaline STEROP® 0,8 mg/mL", indications:["Anaphylaxie","Arrêt cardiaque"], classe:"Catécholamine", posologie:"0,3–0,5 mg/kg IM", risques:["Tachycardie","HTA","Ischémie myocardique"], voie:["IM","IV"], fonctionnement:"Stimule α/β-adrénergiques."},
+      {name:"Adrénaline STEROP® 10 mg/10 mL", indications:["Arrêt cardiaque"], classe:"Catécholamine", posologie:"1 mg IV", risques:["Arythmie","HTA sévère"], voie:["IV"], fonctionnement:"Augmente contraction cardiaque."},
+      {name:"Anaxène® (Naloxone) 0,5 mg/mL", indications:["Surdosage opioïdes"], classe:"Antagoniste opioïde", posologie:"0,4–2 mg IV", risques:["Hypertension","Œdème pulmonaire"], voie:["IV"], fonctionnement:"Inverse effets opioïdes."},
+      {name:"Aspégic® 500 mg/5 mL", indications:["Douleur","Fièvre","Anti-agrégant"], classe:"AINS/antiagrégant", posologie:"500–1000 mg IV", risques:["Gastralgie","Hémorragie"], voie:["IV"], fonctionnement:"Inhibe COX."},
+      {name:"Atropine STEROP® 0,5 mg/mL", indications:["Bradycardie"], classe:"Anticholinergique", posologie:"0,5–1 mg IV", risques:["Tachycardie","Sécheresse buccale"], voie:["IV"], fonctionnement:"Bloque muscariniques."},
+      {name:"Calciclo STEROP® 1 g/10 mL", indications:["Hypocalcémie"], classe:"Sels minéraux", posologie:"1 g IV", risques:["Hypotension","Palpitations"], voie:["IV"], fonctionnement:"Apporte calcium."},
+      {name:"Cedocard® 10 mg/10 mL", indications:["Arythmie ventriculaire"], classe:"Lidocaïne", posologie:"1–1,5 mg/kg IV", risques:["Convulsions","Hypotension"], voie:["IV"], fonctionnement:"Stabilise membranes cardiaques."},
+      {name:"Célocurine® 100 mg/2 mL", indications:["Curarisation"], classe:"Bloquant neuromusculaire", posologie:"0,1 mg/kg IV", risques:["Apnée","Bronchospasme"], voie:["IV"], fonctionnement:"Paralysie musculaire transitoire."},
+      {name:"Cordarone® 150 mg/3 mL", indications:["Arythmie supra/ventriculaire"], classe:"Amiodarone", posologie:"150 mg IV en 10 min", risques:["Hypotension","Allongement QT"], voie:["IV"], fonctionnement:"Prolonge repolarisation."},
+      {name:"Diclofenac EG® 75 mg/3 mL", indications:["Douleur","Inflammation"], classe:"AINS", posologie:"75 mg IV", risques:["Insuffisance rénale","Ulcère gastro"], voie:["IV"], fonctionnement:"Inhibe COX."},
+      {name:"Dipidolor® 20 mg/2 mL", indications:["Douleur modérée à sévère"], classe:"Opioïde", posologie:"7,5–15 mg IV", risques:["Nausées","Dépression respiratoire"], voie:["IV"], fonctionnement:"Agoniste opioïde."},
+      {name:"Dobutrex® 250 mg/20 mL", indications:["Choc cardiogénique"], classe:"Inotrope", posologie:"2–20 µg/kg/min IV", risques:["Tachycardie","Hypertension"], voie:["IV"], fonctionnement:"↑ force de contraction."},
+      {name:"Etomidate Lipuro® 20 mg/10 mL", indications:["Induction anesthésie"], classe:"Hypnotique", posologie:"0,2–0,6 mg/kg IV", risques:["Myoclonies","Nausées"], voie:["IV"], fonctionnement:"Anesthésie rapide."},
+      {name:"Exacyl® 500 mg/5 mL", indications:["Hémorragie","Trauma"], classe:"Antifibrinolytique", posologie:"1 g IV", risques:["Thrombose"], voie:["IV"], fonctionnement:"Inhibe fibrinolyse."},
+      {name:"Glucose 5 g/10 mL", indications:["Hypoglycémie"], classe:"Solution glucosée", posologie:"10–25 g IV", risques:["Hyperglycémie"], voie:["IV"], fonctionnement:"Apport de glucose."},
+      {name:"Ibuprofen EG® 400 mg", indications:["Douleur","Inflammation"], classe:"AINS", posologie:"400 mg PO", risques:["Ulcère gastro","Insuffisance rénale"], voie:["PO"], fonctionnement:"Inhibe COX."},
+      {name:"Lévocétirizine EG® 5 mg", indications:["Rhinite allergique","Urticaire"], classe:"Antihistaminique", posologie:"5 mg PO", risques:["Somnolence"], voie:["PO"], fonctionnement:"Bloque récepteurs H1."},
+      {name:"Paracétamol 500 mg", indications:["Douleur","Fièvre"], classe:"Analgésique non-opioïde", posologie:"500 mg IV", risques:["Hépatotoxicité"], voie:["IV"], fonctionnement:"Inhibe prostaglandines."},
+      {name:"Paracétamol 1 g", indications:["Douleur","Fièvre"], classe:"Analgésique non-opioïde", posologie:"1 g IV", risques:["Hépatotoxicité"], voie:["IV"], fonctionnement:"Dose doublée."},
+      {name:"Propofolip® 1% (50 mL)", indications:["Induction/sédation"], classe:"Hypnotique", posologie:"1–2 mg/kg IV", risques:["Hypotension","Dépression respiratoire"], voie:["IV"], fonctionnement:"Action rapide."},
+      {name:"Mini-Spike transfert", indications:["Transfert solution"], classe:"Dispositif", posologie:"—", risques:[], voie:[], fonctionnement:"Transfert aseptique de liquides."},
+      {name:"NaCl 0,9% 10 mL", indications:["Réhydratation locale"], classe:"Solution saline", posologie:"10 mL IV", risques:["Hyperhydratation"], voie:["IV"], fonctionnement:"Solution saline."},
+      {name:"Amlor® 5 mg", indications:["HTA","Angor"], classe:"Inhibiteur calcique", posologie:"5 mg PO", risques:["Œdème","Céphalées"], voie:["PO"], fonctionnement:"Bloque canaux calciques."},
+      {name:"Brilique® 90 mg", indications:["Prévention thrombose"], classe:"Antiagrégant (ticagrélor)", posologie:"90 mg PO", risques:["Saignements"], voie:["PO"], fonctionnement:"Inhibe agrégation plaquettaire."},
+      {name:"Dompéridone 10 mg", indications:["Nausées","Vomissements"], classe:"Antiméticuleux", posologie:"10 mg PO", risques:["Hyperprolactinémie"], voie:["PO"], fonctionnement:"Stimule motilité gastrique."},
+      {name:"Linsol® 2% (200 mg/10 mL)", indications:["Anesthésie locale"], classe:"Anesthésique local", posologie:"3–5 mg/kg", risques:["Convulsions","Arythmies"], voie:["IM/IV/SC"], fonctionnement:"Bloque conduction nerveuse."},
+      {name:"Lithican® 50 mg", indications:["Sédation","Nausées rebelles"], classe:"Antipsychotique", posologie:"25–50 mg IV", risques:["Hypotension","Sédation"], voie:["IV"], fonctionnement:"Antipsychotique & antiémétique."},
+      {name:"Valium® 10 mg", indications:["Convulsions"], classe:"Benzodiazépine", posologie:"5–10 mg IV", risques:["Dépression respiratoire"], voie:["IV"], fonctionnement:"Potentialise GABA."},
+      {name:"Naloxon® 0,4 mg", indications:["Surdosage opioïdes"], classe:"Antagoniste opioïde", posologie:"0,4–2 mg IV", risques:["Hypertension","Tachycardie"], voie:["IV"], fonctionnement:"Inverse opioïdes."},
+      {name:"Noradrénaline® 4 mg", indications:["Choc septique","Choc réfractaire"], classe:"Catécholamine", posologie:"0,05–2 µg/kg/min IV", risques:["Extravasation","Ischémie"], voie:["IV"], fonctionnement:"Vasoconstricteur puissant."},
+      {name:"Primperan® 10 mg", indications:["Nausées","Vomissements"], classe:"Antiméticuleux", posologie:"10 mg IV", risques:["Dyskinésies","Somnolence"], voie:["IV"], fonctionnement:"Bloque dopamine."},
+      {name:"Rydène® 5 mg", indications:["Antiémétique"], classe:"Antihistaminique", posologie:"5 mg IV", risques:["Somnolence","Hypotension"], voie:["IV"], fonctionnement:"Bloque H1."},
+      {name:"Solumédrol® 125 mg", indications:["Choc anaphylactique","Crises sévères"], classe:"Corticostéroïde", posologie:"125 mg IV", risques:["Hyperglycémie","Immunosuppression"], voie:["IV"], fonctionnement:"Anti-inflammatoire puissant."},
+      {name:"Solumédrol® 40 mg", indications:["Inflammation sévère"], classe:"Corticostéroïde", posologie:"40 mg IV", risques:["Rétention hydrosodée"], voie:["IV"], fonctionnement:"Réduit inflammation."},
+      {name:"Sufentanil® 50 µg", indications:["Analgésie très puissante"], classe:"Opioïde", posologie:"5–20 µg IV", risques:["Dépression respiratoire"], voie:["IV"], fonctionnement:"Agoniste µ-opioïde puissant."},
+      {name:"Sulfate de magnésium 3 g", indications:["Pré-éclampsie","Torsades"], classe:"Minéral", posologie:"2–4 g IV", risques:["Hypotension","Bloc neuromusculaire"], voie:["IV"], fonctionnement:"Anticonvulsivant & stabilise cœur."},
+      {name:"Tradonal® 100 mg", indications:["Douleur modérée"], classe:"Opioïde", posologie:"100 mg IV", risques:["Nausées","Vertiges"], voie:["IV"], fonctionnement:"Agoniste opioïde modéré."},
+      {name:"Trandate® 100 mg", indications:["HTA sévère"], classe:"Bêta-bloquant", posologie:"5–20 mg IV", risques:["Bradycardie","Fatigue"], voie:["IV"], fonctionnement:"Bloque récepteurs β."}
+    ];
+
+    // Chrono
+    let sec=0, timer;
+    const disp=document.getElementById("time");
+    document.getElementById("btnStart").onclick=()=>{
+      if(!timer) timer=setInterval(()=>{
+        sec++;
+        const h=String(Math.floor(sec/3600)).padStart(2,"0"),
+              m=String(Math.floor((sec%3600)/60)).padStart(2,"0"),
+              s=String(sec%60).padStart(2,"0");
+        disp.textContent=`${h}:${m}:${s}`;
+      },1000);
+    };
+    document.getElementById("btnStop").onclick=()=>{clearInterval(timer);timer=null;};
+    document.getElementById("btnReset").onclick=()=>{clearInterval(timer);timer=null;sec=0;disp.textContent="00:00:00";};
+
+    // Contrôles
+    const sel=document.getElementById("selPatho"),
+          btnAmp=document.getElementById("btnAmp"),
+          cont=document.getElementById("cardsContainer");
+
+    [...new Set(drugs.flatMap(d=>d.indications))].sort().forEach(p=>{
+      const o=document.createElement("option");
+      o.value=p; o.textContent=p; sel.appendChild(o);
+    });
+
+    sel.onchange=()=>render(sel.value);
+    btnAmp.onclick=()=>render();
+
+    function render(filter){
+      cont.innerHTML="";
+      document.querySelector(".section").style.display="block";
+      let list = filter ? drugs.filter(d=>d.indications.includes(filter)) : drugs;
+      list.forEach(d=>{
+        const c=document.createElement("div");
+        c.className="card";
+        c.innerHTML=`
+          <h3><span class="tooltip">${d.name}
+            <span class="tooltiptext">${d.fonctionnement}</span>
+          </span></h3>
+          <p><strong>Classe :</strong> ${d.classe}</p>
+          <p><strong>Voie :</strong> ${d.voie.join(", ")}</p>
+          <p><strong>Posologie :</strong> ${d.posologie}</p>
+          <p><strong>Risques :</strong> ${d.risques.join(", ")}</p>
+        `;
+        cont.appendChild(c);
+      });
+    }
+  </script>
+</body>
+</html>
